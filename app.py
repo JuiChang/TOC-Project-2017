@@ -8,7 +8,7 @@ from fsm import TocMachine
 
 
 API_TOKEN = '507370070:AAFEDF3yeOWZtKIv3xS-Af4tE8q4GwvXnGo'
-WEBHOOK_URL = 'https://e76fe409.ngrok.io/hook'
+WEBHOOK_URL = 'https://b1bd85b4.ngrok.io/hook'
 
 app = Flask(__name__)
 bot = telegram.Bot(token=API_TOKEN)
@@ -22,7 +22,8 @@ machine = TocMachine(
         'CNN10',
         'BBC10',
         'CNNURL_TRIV', #trivial
-        'BBCURL_TRIV'
+        'BBCURL_TRIV',
+        'FREQ'
     ],
     transitions=[
         {
@@ -106,6 +107,25 @@ machine = TocMachine(
             'trigger': 'go_triv',
             'source': 'BBCURL',
             'dest': 'BBCURL_TRIV'
+        },
+        { 
+            'trigger': 'advance',
+            'source': [
+                'START',
+                'CNNALL',
+                'CNN10',
+                'CNNURL_TRIV',
+                'BBCALL',
+                'BBC10',
+                'BBCURL_TRIV'
+            ],
+            'dest': 'FREQ',
+            'conditions': 'is_going_to_FREQ'
+        },
+        {
+            'trigger': 'go_start',
+            'source': 'FREQ',
+            'dest': 'START'   
         }
     ],
     initial='START',

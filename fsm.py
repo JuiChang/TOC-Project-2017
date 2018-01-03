@@ -1,7 +1,10 @@
 from transitions.extensions import GraphMachine
 import requests
-#from bs4 import BeautifulSoup
 import re
+
+from nltk.corpus import stopwords
+from nltk.tokenize import RegexpTokenizer
+from nltk.probability import FreqDist
 
 
 class TocMachine(GraphMachine):
@@ -21,11 +24,19 @@ class TocMachine(GraphMachine):
         
     def is_going_to_CNNURL(self, update):
         text = update.message.text
-        return (text.lower() != 'bbc' and text.lower() != 'BBC' and text.lower() != 'Bbc' and text.lower() != 'bbc10' and text.lower() != 'BBC10' and text.lower() != 'Bbc10' and text.lower() != 'cnn' and text.lower() != 'CNN' and text.lower() != 'Cnn' and text.lower() != 'cnn10' and text.lower() != 'CNN10' and text.lower() != 'Cnn10')
+        return (text.lower() != 'bbc' and text.lower() != 'BBC' and text.lower() != 'Bbc' and \
+                text.lower() != 'bbc10' and text.lower() != 'BBC10' and text.lower() != 'Bbc10' and \
+                text.lower() != 'cnn' and text.lower() != 'CNN' and text.lower() != 'Cnn' and \
+                text.lower() != 'cnn10' and text.lower() != 'CNN10' and text.lower() != 'Cnn10' and \
+                text.lower() != 'freq' and text.lower() != 'Freq' and text.lower() != 'FREQ')
 
     def is_going_to_BBCURL(self, update):
         text = update.message.text
-        return (text.lower() != 'cnn' and text.lower() != 'CNN' and text.lower() != 'Cnn' and text.lower() != 'cnn10' and text.lower() != 'CNN10' and text.lower() != 'Cnn10' and text.lower() != 'bbc' and text.lower() != 'BBC' and text.lower() != 'Bbc' and text.lower() != 'bbc10' and text.lower() != 'BBC10' and text.lower() != 'Bbc10')
+        return (text.lower() != 'cnn' and text.lower() != 'CNN' and text.lower() != 'Cnn' and \
+                text.lower() != 'cnn10' and text.lower() != 'CNN10' and text.lower() != 'Cnn10' and \
+                text.lower() != 'bbc' and text.lower() != 'BBC' and text.lower() != 'Bbc' and \
+                text.lower() != 'bbc10' and text.lower() != 'BBC10' and text.lower() != 'Bbc10' and \
+                text.lower() != 'freq' and text.lower() != 'Freq' and text.lower() != 'FREQ')
     
     def is_going_to_CNN10(self, update):
         text = update.message.text
@@ -34,6 +45,10 @@ class TocMachine(GraphMachine):
     def is_going_to_BBC10(self, update):
         text = update.message.text
         return (text.lower() == 'bbc10' or text.lower() == 'BBC10' or text.lower() == 'Bbc10')
+    
+    def is_going_to_FREQ(self, update):
+        text = update.message.text
+        return (text.lower() == 'freq' or text.lower() == 'Freq' or text.lower() == 'FREQ')
 
     def on_enter_CNNALL(self, update):	
         response = requests.get("http://edition.cnn.com/")
@@ -142,8 +157,70 @@ class TocMachine(GraphMachine):
             bbc_raw[i] = bbc_raw[i][1:len(bbc_raw[i])-5]
             bbc_raw[i] = bbc_raw[i].replace('&#x27;', '\'')
             bbc_concat = bbc_concat + str(i) + ') ' + bbc_raw[i] + '\n'
-        reply = bbc_concat
+            reply = bbc_concat
         update.message.reply_text(reply)
+    
+    def on_enter_FREQ(self, update):
+        response = requests.get("http://edition.cnn.com/")
+        pattern = "uri[^,]*,\"headline\":\"[^\"]*\""
+        cnn_raw = re.findall(pattern, response.text)
+        cnn_concat = ""
+        for i in range(len(cnn_raw)):
+            cnn_raw[i] = re.findall("\"headline\":\"[^\"]*\"", cnn_raw[i])[0] 
+            cnn_raw[i] = cnn_raw[i][12:]
+            cnn_raw[i] = cnn_raw[i][:len(cnn_raw[i])-1]
+            cnn_raw[i] = cnn_raw[i].replace('\\u003cstrong>', '')
+            cnn_raw[i] = cnn_raw[i].replace('\\u003c/strong>', '') 
+            cnn_concat = cnn_concat + cnn_raw[i] + ' '
+
+
+        response = requests.get("http://www.bbc.com/news")
+
+        pattern = "href[^<]*<[^>]*>[^<]*</h3>"
+        bbc_raw = re.findall(pattern, response.text)
+        bbc_concat = ""
+        for i in range(len(bbc_raw)):
+            bbc_raw[i] = re.findall(">[^>]*</h3>", bbc_raw[i])[0]
+            bbc_raw[i] = bbc_raw[i][1:len(bbc_raw[i])-5]
+            bbc_raw[i] = bbc_raw[i].replace('&#x27;', '\'')
+            bbc_concat = bbc_concat + bbc_raw[i] + ' '
+
+        both_concat = cnn_concat + ' ' + bbc_concat
+        
+        tokenizer = RegexpTokenizer(r'\w+')
+        
+        mostcommon = list();
+        for concat in [both_concat, cnn_concat, bbc_concat]:
+            word_tokens = tokenizer.tokenize(concat)
+            stopword_list = stopwords.words('english')
+            stopword_list.insert(0,"The")
+            stop_words = set(stopword_list)
+            filtered_sentence = [w for w in word_tokens if not w in stop_words]
+            filtered_sentence = []
+         
+            for w in word_tokens:
+                if w not in stop_words:
+                    filtered_sentence.append(w)
+            fdist = FreqDist(filtered_sentence)
+            mostcommon.append(fdist.most_common(10))
+    
+        reply = 'Overall Freq Words:\n'
+        for i in range(10):
+            reply = reply + mostcommon[0][i][0]
+            if i < 9:
+                reply = reply + ', '
+        reply = reply + '\n\nCNN Freq Words:\n'
+        for i in range(10):
+            reply = reply + mostcommon[1][i][0]
+            if i < 9:
+                reply = reply + ', '
+        reply = reply + '\n\nBBC Freq Words:\n'
+        for i in range(10):
+            reply = reply + mostcommon[2][i][0]
+            if i < 9:
+                reply = reply + ', '
+        update.message.reply_text(reply)
+        self.go_start(update)
     
     def on_exit_START(self, update):
         print('Leaving START')
@@ -165,3 +242,6 @@ class TocMachine(GraphMachine):
 
     def on_exit_BBC10(self, update):
         print('Leaving BBC10')
+        
+    def on_exit_FREQ(self, update):
+        print('Leaving FREQ')
