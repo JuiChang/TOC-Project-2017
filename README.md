@@ -26,7 +26,9 @@ python app.py
 The initial state is set to `START`.
 
 Input "CNN" : the bot replys the news titles parsed from on http://edition.cnn.com with indices.
+
 Input "CNN10" : the bot replys the first 10 news titles parsed from http://edition.cnn.com with indices.
+
 So do inputting "BBC" and "BBC10". (source: http://www.bbc.com/news)
 
 Then the user can get a news URL by inputting the index of a news title.
