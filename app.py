@@ -7,40 +7,108 @@ from flask import Flask, request, send_file
 from fsm import TocMachine
 
 
-API_TOKEN = 'Your Telegram API Token'
-WEBHOOK_URL = 'Your Webhook URL'
+API_TOKEN = '507370070:AAFEDF3yeOWZtKIv3xS-Af4tE8q4GwvXnGo'
+WEBHOOK_URL = 'https://e76fe409.ngrok.io/hook'
 
 app = Flask(__name__)
 bot = telegram.Bot(token=API_TOKEN)
 machine = TocMachine(
     states=[
-        'user',
-        'state1',
-        'state2'
+        'START',
+        'CNNALL',
+        'BBCALL',
+        'CNNURL',
+        'BBCURL',
+        'CNN10',
+        'BBC10',
+        'CNNURL_TRIV', #trivial
+        'BBCURL_TRIV'
     ],
     transitions=[
         {
             'trigger': 'advance',
-            'source': 'user',
-            'dest': 'state1',
-            'conditions': 'is_going_to_state1'
+            'source': [
+                'START',
+                'CNN10',
+                'BBCALL',
+                'BBC10',
+                'CNNURL_TRIV',
+                'BBCURL_TRIV'
+            ],
+            'dest': 'CNNALL',
+            'conditions': 'is_going_to_CNNALL'
         },
         {
             'trigger': 'advance',
-            'source': 'user',
-            'dest': 'state2',
-            'conditions': 'is_going_to_state2'
+            'source': [
+                'START',
+                'BBC10',
+                'CNNALL',
+                'CNN10',
+                'CNNURL_TRIV',
+                'BBCURL_TRIV'
+            ],
+            'dest': 'BBCALL',
+            'conditions': 'is_going_to_BBCALL'
         },
         {
-            'trigger': 'go_back',
+            'trigger': 'advance',
             'source': [
-                'state1',
-                'state2'
+                'START',
+                'CNNALL',
+                'BBCALL',
+                'BBC10',
+                'CNNURL_TRIV',
+                'BBCURL_TRIV'
             ],
-            'dest': 'user'
+            'dest': 'CNN10',
+            'conditions': 'is_going_to_CNN10'
+        },
+        {
+            'trigger': 'advance',
+            'source': [
+                'START',
+                'BBCALL',
+                'CNNALL',
+                'CNN10',
+                'CNNURL_TRIV',
+                'BBCURL_TRIV'
+            ],
+            'dest': 'BBC10',
+            'conditions': 'is_going_to_BBC10'
+        },
+        { 
+            'trigger': 'advance',
+            'source': [
+                'CNNALL',
+                'CNN10',
+                'CNNURL_TRIV'
+            ],
+            'dest': 'CNNURL',
+            'conditions': 'is_going_to_CNNURL'
+        },
+        { 
+            'trigger': 'advance',
+            'source': [
+                'BBCALL',
+                'BBC10',
+                'BBCURL_TRIV'
+            ],
+            'dest': 'BBCURL',
+            'conditions': 'is_going_to_BBCURL'
+        },
+        {
+            'trigger': 'go_triv',
+            'source': 'CNNURL',
+            'dest': 'CNNURL_TRIV'
+        },
+        {
+            'trigger': 'go_triv',
+            'source': 'BBCURL',
+            'dest': 'BBCURL_TRIV'
         }
     ],
-    initial='user',
+    initial='START',
     auto_transitions=False,
     show_conditions=True,
 )
@@ -72,4 +140,4 @@ def show_fsm():
 
 if __name__ == "__main__":
     _set_webhook()
-    app.run()
+    app.run(port=5487)

@@ -1,4 +1,7 @@
 from transitions.extensions import GraphMachine
+import requests
+#from bs4 import BeautifulSoup
+import re
 
 
 class TocMachine(GraphMachine):
@@ -8,24 +11,157 @@ class TocMachine(GraphMachine):
             **machine_configs
         )
 
-    def is_going_to_state1(self, update):
+    def is_going_to_CNNALL(self, update):
         text = update.message.text
-        return text.lower() == 'go to state1'
+        return (text.lower() == 'cnn' or text.lower() == 'CNN' or text.lower() == 'Cnn')
 
-    def is_going_to_state2(self, update):
+    def is_going_to_BBCALL(self, update):
         text = update.message.text
-        return text.lower() == 'go to state2'
+        return (text.lower() == 'bbc' or text.lower() == 'BBC' or text.lower() == 'Bbc')
+        
+    def is_going_to_CNNURL(self, update):
+        text = update.message.text
+        return (text.lower() != 'bbc' and text.lower() != 'BBC' and text.lower() != 'Bbc' and text.lower() != 'bbc10' and text.lower() != 'BBC10' and text.lower() != 'Bbc10' and text.lower() != 'cnn' and text.lower() != 'CNN' and text.lower() != 'Cnn' and text.lower() != 'cnn10' and text.lower() != 'CNN10' and text.lower() != 'Cnn10')
 
-    def on_enter_state1(self, update):
-        update.message.reply_text("I'm entering state1")
-        self.go_back(update)
+    def is_going_to_BBCURL(self, update):
+        text = update.message.text
+        return (text.lower() != 'cnn' and text.lower() != 'CNN' and text.lower() != 'Cnn' and text.lower() != 'cnn10' and text.lower() != 'CNN10' and text.lower() != 'Cnn10' and text.lower() != 'bbc' and text.lower() != 'BBC' and text.lower() != 'Bbc' and text.lower() != 'bbc10' and text.lower() != 'BBC10' and text.lower() != 'Bbc10')
+    
+    def is_going_to_CNN10(self, update):
+        text = update.message.text
+        return (text.lower() == 'cnn10' or text.lower() == 'CNN10' or text.lower() == 'Cnn10')
 
-    def on_exit_state1(self, update):
-        print('Leaving state1')
+    def is_going_to_BBC10(self, update):
+        text = update.message.text
+        return (text.lower() == 'bbc10' or text.lower() == 'BBC10' or text.lower() == 'Bbc10')
 
-    def on_enter_state2(self, update):
-        update.message.reply_text("I'm entering state2")
-        self.go_back(update)
+    def on_enter_CNNALL(self, update):	
+        response = requests.get("http://edition.cnn.com/")
+        pattern = "uri[^,]*,\"headline\":\"[^\"]*\""
+        cnn_raw = re.findall(pattern, response.text)
+        cnn_concat = ""
+        for i in range(len(cnn_raw)):
+            cnn_raw[i] = re.findall("\"headline\":\"[^\"]*\"", cnn_raw[i])[0] 
+            cnn_raw[i] = cnn_raw[i][12:]
+            cnn_raw[i] = cnn_raw[i][:len(cnn_raw[i])-1]
+            cnn_raw[i] = cnn_raw[i].replace('\\u003cstrong>', '')
+            cnn_raw[i] = cnn_raw[i].replace('\\u003c/strong>', '') 
+            cnn_concat = cnn_concat + str(i) + ') ' + cnn_raw[i] + '\n'
+        reply = cnn_concat 
+        update.message.reply_text(reply)
 
-    def on_exit_state2(self, update):
-        print('Leaving state2')
+    def on_enter_BBCALL(self, update):
+        response = requests.get("http://www.bbc.com/news")
+        #soup = BeautifulSoup(response.text, "lxml")
+
+        pattern = "href[^<]*<[^>]*>[^<]*</h3>"
+        bbc_raw = re.findall(pattern, response.text)
+        bbc_concat = ""
+        for i in range(len(bbc_raw)):
+            bbc_raw[i] = re.findall(">[^>]*</h3>", bbc_raw[i])[0]
+            bbc_raw[i] = bbc_raw[i][1:len(bbc_raw[i])-5]
+            bbc_raw[i] = bbc_raw[i].replace('&#x27;', '\'')
+            bbc_concat = bbc_concat + str(i) + ') ' + bbc_raw[i] + '\n'
+        reply = bbc_concat
+        update.message.reply_text(reply)
+        
+    def on_enter_CNNURL(self, update):
+        text = update.message.text
+        response = requests.get("http://edition.cnn.com/")
+
+        pattern = "uri[^,]*,\"headline\":\"[^\"]*\""
+        cnn_url = re.findall(pattern, response.text)
+    
+        for i in range(len(cnn_url)):
+            cnn_url[i] = cnn_url[i][6:]
+            cnn_url[i] = re.findall("[^\"]*\"", cnn_url[i])[0] 
+            cnn_url[i] = "http://edition.cnn.com" + cnn_url[i][:len(cnn_url[i])-1]
+                
+        if text.lower().isdigit():
+            if int(text.lower()) < len(cnn_url):
+                reply = cnn_url[int(text.lower())]
+                #print('enter nested-if')
+            else:
+                reply = 'not a news index'
+                #print('enter inner else')
+        else:
+            reply = 'not a news index'
+            #print('enter else')
+        update.message.reply_text(reply)
+        self.go_triv(update)
+        
+    def on_enter_BBCURL(self, update):
+        text = update.message.text
+        response = requests.get("http://www.bbc.com/news")
+        #soup = BeautifulSoup(response.text, "lxml")
+
+        pattern = "href[^<]*<[^>]*>[^<]*</h3>"
+        bbc_url = re.findall(pattern, response.text)
+
+        for i in range(len(bbc_url)):
+            bbc_url[i] = re.findall("[^\"]*\"", bbc_url[i][6:])[0] 
+            bbc_url[i] = "http://www.bbc.com" + bbc_url[i][:len(bbc_url[i])-1]
+        
+        if text.lower().isdigit():
+            if int(text.lower()) < len(bbc_url):
+                reply = bbc_url[int(text.lower())]
+                print('enter nested-if')
+            else:
+                reply = 'not a news index'
+                print('enter inner else')
+        else:
+            reply = 'not a news index'
+            print('enter else')
+        update.message.reply_text(reply)
+        self.go_triv(update)
+        
+    def on_enter_CNN10(self, update):	
+        response = requests.get("http://edition.cnn.com/")
+        pattern = "uri[^,]*,\"headline\":\"[^\"]*\""
+        cnn_raw = re.findall(pattern, response.text)
+        cnn_concat = ""
+        for i in (range(len(cnn_raw)) if len(cnn_raw) < 10 else range(10)):
+            cnn_raw[i] = re.findall("\"headline\":\"[^\"]*\"", cnn_raw[i])[0] 
+            cnn_raw[i] = cnn_raw[i][12:]
+            cnn_raw[i] = cnn_raw[i][:len(cnn_raw[i])-1]
+            cnn_raw[i] = cnn_raw[i].replace('\\u003cstrong>', '')
+            cnn_raw[i] = cnn_raw[i].replace('\\u003c/strong>', '') 
+            cnn_concat = cnn_concat + str(i) + ') ' + cnn_raw[i] + '\n'
+        reply = cnn_concat 
+        update.message.reply_text(reply)
+
+    def on_enter_BBC10(self, update):
+        response = requests.get("http://www.bbc.com/news")
+        #soup = BeautifulSoup(response.text, "lxml")
+
+        pattern = "href[^<]*<[^>]*>[^<]*</h3>"
+        bbc_raw = re.findall(pattern, response.text)
+        bbc_concat = ""
+        for i in (range(len(bbc_raw)) if len(bbc_raw) < 10 else range(10)):
+            bbc_raw[i] = re.findall(">[^>]*</h3>", bbc_raw[i])[0]
+            bbc_raw[i] = bbc_raw[i][1:len(bbc_raw[i])-5]
+            bbc_raw[i] = bbc_raw[i].replace('&#x27;', '\'')
+            bbc_concat = bbc_concat + str(i) + ') ' + bbc_raw[i] + '\n'
+        reply = bbc_concat
+        update.message.reply_text(reply)
+    
+    def on_exit_START(self, update):
+        print('Leaving START')
+
+    def on_exit_CNNALL(self, update):
+        print('Leaving CNNALL') 
+
+    def on_exit_BBCALL(self, update):
+        print('Leaving BBCALL')
+    
+    def on_exit_CNNURL(self, update):
+        print('Leaving CNNURL') 
+
+    def on_exit_BBCURL(self, update):
+        print('Leaving BBCURL')
+        
+    def on_exit_CNN10(self, update):
+        print('Leaving CNN10') 
+
+    def on_exit_BBC10(self, update):
+        print('Leaving BBC10')
