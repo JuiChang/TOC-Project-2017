@@ -1,34 +1,12 @@
 # TOC Project 2017
 
-Template Code for TOC Project 2017
-
-A telegram bot based on a finite state machine
-
-## Setup
-
-### Prerequisite
-* Python 3
-
-#### Install Dependency
-```sh
-pip install -r requirements.txt
-```
-
-* pygraphviz (For visualizing Finite State Machine)
-    * [Setup pygraphviz on Ubuntu](http://www.jianshu.com/p/a3da7ecc5303)
-
-### Secret Data
-
-`API_TOKEN` and `WEBHOOK_URL` in app.py **MUST** be set to proper values.
-Otherwise, you might not be able to run your code.
-
 ### Run Locally
 You can either setup https server or using `ngrok` as a proxy.
 
 **`ngrok` would be used in the following instruction**
 
 ```sh
-ngrok http 5000
+ngrok http 5487
 ```
 
 After that, `ngrok` would generate a https URL.
@@ -38,24 +16,19 @@ You should set `WEBHOOK_URL` (in app.py) to `your-https-URL/hook`.
 #### Run the sever
 
 ```sh
-python3 app.py
+python app.py
 ```
 
 ## Finite State Machine
 ![fsm](./img/show-fsm.png)
 
 ## Usage
-The initial state is set to `user`.
+The initial state is set to `START`.
 
-Every time `user` state is triggered to `advance` to another state, it will `go_back` to `user` state after the bot replies corresponding message.
+Input "CNN" : the bot replys the news titles parsed from on http://edition.cnn.com with indices.
+Input "CNN10" : the bot replys the first 10 news titles parsed from http://edition.cnn.com with indices.
+So do inputting "BBC" and "BBC10". (source: http://www.bbc.com/news)
 
-* user
-	* Input: "go to state1"
-		* Reply: "I'm entering state1"
+Then the user can get a news URL by inputting the index of a news title.
 
-	* Input: "go to state2"
-		* Reply: "I'm entering state2"
-
-
-## Author
-[Lee-W](https://github.com/Lee-W)
+Input "Freq" : the bot replys the top 10 frenquent words in the CNN titles, BBC titles, overall, respectly.

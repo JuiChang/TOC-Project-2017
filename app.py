@@ -8,7 +8,7 @@ from fsm import TocMachine
 
 
 API_TOKEN = '507370070:AAFEDF3yeOWZtKIv3xS-Af4tE8q4GwvXnGo'
-WEBHOOK_URL = 'https://b1bd85b4.ngrok.io/hook'
+WEBHOOK_URL = 'https://bd3ffff8.ngrok.io/hook'
 
 app = Flask(__name__)
 bot = telegram.Bot(token=API_TOKEN)
