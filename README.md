@@ -22,7 +22,9 @@ python app.py
 ## Finite State Machine
 ![fsm](./img/show-fsm.png)
 
-![fsm](./img/show-fsm-2.png)
+![fsm-2](./img/show-fsm-2.png)
+
+p.s. Actually, there are two states called "BBCURL_TRIV" and "CNNURL_TRIV" because of the problem of creating self transitions ("BBCURL" and "CNNURL" in this program), but I ignore them in the second figure above.
 
 ## Usage
 The initial state is set to `START`.
@@ -35,4 +37,4 @@ So do inputting "BBC" and "BBC10". (source: http://www.bbc.com/news)
 
 Then the user can get a news URL by inputting the index of a news title.
 
-Input "Freq" : the bot replys the top 10 frenquent words in the CNN titles, BBC titles, overall, respectly.
+Input "Freq" : the bot replys the top 10 frenquent words in the CNN titles, BBC titles and overall titles, respectly.
